@@ -7,12 +7,12 @@ import (
 )
 
 type ScanResult struct {
-	Port  int
+	Port  string
 	State string
 }
 
 func ScanPort(protocol, hostname string, port int) ScanResult {
-	result := ScanResult{Port: port}
+	result := ScanResult{Port: protocol + "/" + strconv.Itoa(port)}
 
 	address := hostname + ":" + strconv.Itoa(port)
 	conn, err := net.DialTimeout(protocol, address, 60*time.Second)
@@ -32,6 +32,7 @@ func InitialScan(hostname string) []ScanResult {
 
 	for i := 1; i <= 1024; i++ {
 		results = append(results, ScanPort("tcp", hostname, i))
+		results = append(results, ScanPort("udp", hostname, i))
 	}
 
 	return results
