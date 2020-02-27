@@ -44,24 +44,41 @@ var KnownTcpPorts = map[int]string{
 	28017: "mongodb web admin [ http://www.mongodb.org/ ]",
 }
 
+const MaxTcpPort = 32728
+
 type ScanResult struct {
-	Port  string
-	State string
+	Port     int
+	Open     bool
+	Protocol string
 }
 
-func ScanPort(protocol, hostname string, port int) ScanResult {
-	result := ScanResult{Port: protocol + "/" + strconv.Itoa(port)}
+func ScanTcpPort(hostname string, port int) (result ScanResult) {
+	result := ScanResult{Port: port, Open: false, Protocol: "tcp"}
 
-	address := hostname + ":" + strconv.Itoa(port)
-	conn, err := net.DialTimeout(protocol, address, 60*time.Second)
+	address := net.JoinHostPort(hostname, strconv.Itoa(port))
+	conn, err := net.DialTimeout(result.Protocol, address, 60*time.Second)
 
 	if err != nil {
-		result.State = "Closed"
 		return result
 	}
 	defer conn.Close()
 
-	result.State = "Open"
+	result.State = true
+	return result
+}
+
+func ScanUdpPort(hostname string, port int) (result ScanResult) {
+	result := ScanResult{Port: port, Open: false, Protocol: "udp"}
+
+	address := net.JoinHostPort(hostname, strconv.Itoa(port))
+	conn, err := net.DialTimeout(result.Protocol, address, 60*time.Second)
+
+	if err != nil {
+		return result
+	}
+	defer conn.Close()
+
+	result.State = true
 	return result
 }
 
@@ -69,8 +86,7 @@ func InitialScan(hostname string) []ScanResult {
 	var results []ScanResult
 
 	for i := 1; i <= 1024; i++ {
-		results = append(results, ScanPort("tcp", hostname, i))
-		results = append(results, ScanPort("udp", hostname, i))
+		results = append(results, ScanTcpPort(hostname, i))
 	}
 
 	return results
