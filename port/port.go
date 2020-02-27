@@ -59,12 +59,12 @@ func ScanTcpPort(hostname string, port int) (result ScanResult) {
 	conn, err := net.DialTimeout(result.Protocol, address, 60*time.Second)
 
 	if err != nil {
-		return result
+		return
 	}
 	defer conn.Close()
 
 	result.State = true
-	return result
+	return
 }
 
 func ScanUdpPort(hostname string, port int) (result ScanResult) {
@@ -74,20 +74,24 @@ func ScanUdpPort(hostname string, port int) (result ScanResult) {
 	conn, err := net.DialTimeout(result.Protocol, address, 60*time.Second)
 
 	if err != nil {
-		return result
+		return
 	}
 	defer conn.Close()
 
 	result.State = true
-	return result
+	return
 }
 
-func InitialScan(hostname string) []ScanResult {
-	var results []ScanResult
-
-	for i := 1; i <= 1024; i++ {
+func ScanHost(hostname string, lastPort int) (results []ScanResult) {
+	for i := 1; i <= lastPort; i++ {
 		results = append(results, ScanTcpPort(hostname, i))
 	}
+	return
+}
 
-	return results
+func ScanHost(hostname string) (results []ScanResult) {
+	for i := 1; i <= MaxTcpPort; i++ {
+		results = append(results, ScanTcpPort(hostname, i))
+	}
+	return
 }
