@@ -89,7 +89,7 @@ func ScanHost(hostname string, lastPort int) (results []ScanResult) {
 	return
 }
 
-func ScanHost(hostname string) (results []ScanResult) {
+func SweepHost(hostname string) (results []ScanResult) {
 	for i := 1; i <= MaxTcpPort; i++ {
 		results = append(results, ScanTcpPort(hostname, i))
 	}
