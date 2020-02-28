@@ -44,6 +44,7 @@ var KnownTcpPorts = map[int]string{
 	28017: "mongodb web admin [ http://www.mongodb.org/ ]",
 }
 
+const MaxRoutines = 768
 const MaxTcpPort = 65535
 const DefaultTimeoutSecs = 5
 
@@ -84,7 +85,7 @@ func ScanUdpPort(hostname string, port int) (result ScanResult) {
 	return
 }
 
-func scanMultipleTcpPorts(wg *sync.WaitGroup, ipAddr string, portRange []int) {
+func scanMultipleTcpPorts(wg *sync.WaitGroup, ipAddr string, portRange []int, results []ScanResult) {
 	defer wg.Done()
 	for _, port := range portRange {
 		results = append(results, ScanTcpPort(hostname, port))
@@ -109,69 +110,59 @@ func ScanHost(hostname string) (results []ScanResult) {
 	currEnd := portsPerRoutine + len(ports)%numRoutines
 
 	for currRoutine := 0; currRoutine < numRoutines; currRoutine++ {
-		go scanMultipleTcpPorts(&wg, *targetPtr, ports[currStart:currEnd])
+		go scanMultipleTcpPorts(&wg, *targetPtr, ports[currStart:currEnd], results)
 		currStart = currEnd
 		currEnd += portsPerRoutine
 	}
 
 	wg.Wait()
-	for i := 1; i <= lastPort; i++ {
-	}
 	return
 }
 
 func SweepHost(hostname string) (results []ScanResult) {
-	numRoutines = MaxOpenFileDescriptors
 	ports = make([]int, MaxTcpPort)
 	for i := 0; i < MaxTcpPort; i++ {
 		ports[i] = i + 1
 	}
 
 	var wg sync.WaitGroup
-	wg.Add(numRoutines)
+	wg.Add(MaxRoutines)
 
-	portsPerRoutine := len(ports) / numRoutines
+	portsPerRoutine := len(ports) / MaxRoutines
 
 	currStart := 0
-	currEnd := portsPerRoutine + len(ports)%numRoutines
+	currEnd := portsPerRoutine + len(ports)%MaxRoutines
 
-	for currRoutine := 0; currRoutine < numRoutines; currRoutine++ {
-		go scanMultipleTcpPorts(&wg, *targetPtr, ports[currStart:currEnd])
+	for currRoutine := 0; currRoutine < MaxRoutines; currRoutine++ {
+		go scanMultipleTcpPorts(&wg, *targetPtr, ports[currStart:currEnd], results)
 		currStart = currEnd
 		currEnd += portsPerRoutine
 	}
 
 	wg.Wait()
-	for i := 1; i <= MaxTcpPort; i++ {
-		results = append(results, ScanTcpPort(hostname, i))
-	}
 	return
 }
 
 func SweepHostRange(hostname string, rng int) (results []ScanResult) {
-	numRoutines = MaxOpenFileDescriptors
 	ports = make([]int, rng)
-	for i := 0; i < MaxTcpPort; i++ {
+	for i := 0; i < rng; i++ {
 		ports[i] = i + 1
 	}
 
 	var wg sync.WaitGroup
-	wg.Add(numRoutines)
+	wg.Add(MaxRoutines)
 
-	portsPerRoutine := len(ports) / numRoutines
+	portsPerRoutine := len(ports) / MaxRoutines
 
 	currStart := 0
-	currEnd := portsPerRoutine + len(ports)%numRoutines
+	currEnd := portsPerRoutine + len(ports)%MaxRoutines
 
-	for currRoutine := 0; currRoutine < numRoutines; currRoutine++ {
-		go scanMultipleTcpPorts(&wg, *targetPtr, ports[currStart:currEnd])
+	for currRoutine := 0; currRoutine < MaxRoutines; currRoutine++ {
+		go scanMultipleTcpPorts(&wg, *targetPtr, ports[currStart:currEnd], results)
 		currStart = currEnd
 		currEnd += portsPerRoutine
 	}
 
 	wg.Wait()
-	for i := 1; i <= MaxTcpPort; i++ {
-		results = append(results, ScanTcpPort(hostname, i))
-	}
 	return
 }
