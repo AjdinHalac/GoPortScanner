@@ -55,7 +55,7 @@ type ScanResult struct {
 }
 
 func ScanTcpPort(hostname string, port int) (result ScanResult) {
-	result := ScanResult{Port: port, Open: false, Protocol: "tcp"}
+	result := ScanResult{Port: port, Open: false, Protocol: "tcp", ServiceName: KnownTcpPorts[port]}
 
 	address := net.JoinHostPort(hostname, strconv.Itoa(port))
 	conn, err := net.DialTimeout(result.Protocol, address, DefaultTimeoutSecs*time.Second)
@@ -70,7 +70,7 @@ func ScanTcpPort(hostname string, port int) (result ScanResult) {
 }
 
 func ScanUdpPort(hostname string, port int) (result ScanResult) {
-	result := ScanResult{Port: port, Open: false, Protocol: "udp"}
+	result := ScanResult{Port: port, Open: false, Protocol: "udp", ServiceName: KnownTcpPorts[port]}
 
 	address := net.JoinHostPort(hostname, strconv.Itoa(port))
 	conn, err := net.DialTimeout(result.Protocol, address, DefaultTimeoutSecs*time.Second)
@@ -87,15 +87,7 @@ func ScanUdpPort(hostname string, port int) (result ScanResult) {
 func scanMultipleTcpPorts(wg *sync.WaitGroup, ipAddr string, portRange []int) {
 	defer wg.Done()
 	for _, port := range portRange {
-		isOpen := scanTcpPort(ipAddr, port)
-
-		serviceName := KnownTcpPorts[port]
-
-		if isOpen && serviceName != "" {
-			fmt.Println("Target is likely running", KnownTcpPorts[port], "on port", port)
-		} else if isOpen && serviceName == "" {
-			fmt.Println("Port", port, "is open, but no match for known services")
-		}
+		results = append(results, ScanTcpPort(hostname, port))
 	}
 }
 
@@ -124,7 +116,6 @@ func ScanHost(hostname string) (results []ScanResult) {
 
 	wg.Wait()
 	for i := 1; i <= lastPort; i++ {
-		results = append(results, ScanTcpPort(hostname, i))
 	}
 	return
 }
